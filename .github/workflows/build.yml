@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+    branches: master
+
+jobs:
+
+  build:
+    runs-on: macos-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Checkout nix-darwin
+      uses: actions/checkout@v2
+      with:
+        repository: LnL7/nix-darwin
+        path: nix-darwin
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v10
+
+    - name: Build installer
+      run: ./build.sh
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: nix-darwin-installer
+        path: nix-darwin-installer.tar.xz
+
+  test:
+    runs-on: macos-latest
+    needs: build
+    steps:
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: nix-darwin-installer
+
+      - name: Run installer
+        run: |
+          tar -xf nix-darwin-installer.tar.xz
+          ./nix-darwin-installer/install.sh < /dev/null

@@ -1,0 +1,219 @@
+#!/bin/bash
+set -euo pipefail
+
+self="$(dirname "$0")"
+sys="@@sys@@"
+channels_config="$HOME/.nix-channels"
+darwin_config="$HOME/.nixpkgs/darwin-configuration.nix"
+
+source "$self/volume-util.sh"
+
+# Perform checks and determine installation steps
+
+if [ "$(uname -s)" != "Darwin" ]; then
+    echo "error: this script is for macOS only" >&2
+    exit 1
+fi
+
+if [ "$(sw_vers -productVersion | cut -d "." -f 2)" -lt 14 ]; then
+    echo "error: this script requires macOS 10.14 or higher" >&2
+    exit 1
+fi
+
+if [ $EUID -eq 0 ]; then
+    echo "error: please run this script as a regular user, instead of root" >&2
+    exit 1
+fi
+
+if [ -L "/nix" ] || grep -q "^nix." /etc/synthetic.conf 2>/dev/null; then
+    echo "error: /nix is a symlink, please remove it and make sure it's not in synthetic.conf (in which case a reboot is required)" >&2
+    exit 1
+elif type nix-env 2> /dev/null >&2; then
+    echo "error: found an existing 'nix-env', please remove old Nix installations" >&2
+    exit 1
+elif [ -e /nix/store ]; then
+    echo "error: found an existing /nix/store, please remove old Nix installations" >&2
+    exit 1
+elif [ -e /nix/var ]; then
+    echo "error: found an existing /nix/var, please remove old Nix installations" >&2
+    exit 1
+fi
+
+root_disk=$(get_root_disk | get_disk_identifier)
+nix_volume=$(find_nix_volume "$root_disk")
+
+create_nix_volume=""
+if [ -z "$nix_volume" ]; then
+  nix_volume="Nix Store"
+  create_nix_volume=y
+fi
+
+configure_synthetic_run="$(grep -q "^run\\s" /etc/synthetic.conf 2>/dev/null || echo y)"
+configure_synthetic_nix="$(grep -q "^nix$" /etc/synthetic.conf 2>/dev/null || echo y)"
+configure_fstab_nix="$(grep -q "/nix apfs rw" /etc/fstab 2>/dev/null || echo y)"
+configure_channel_nixpkgs="$(grep -q "\\snixpkgs$" "$channels_config" 2>/dev/null || echo y)"
+configure_channel_darwin="$(grep -q "\\sdarwin$" "$channels_config" 2>/dev/null || echo y)"
+
+# Print an explainer and prompt for confirmation
+
+echo "This script will:" >&2
+echo >&2
+if [ "$configure_synthetic_run" = y ]; then
+    echo "* Add a /run symlink by editing /etc/synthetic.conf" >&2
+fi
+if [ "$configure_synthetic_nix" = y ]; then
+    echo "* Add a /nix mountpoint by editing /etc/synthetic.conf" >&2
+fi
+if [ "$create_nix_volume" = y ]; then
+    echo "* Create an APFS volume 'Nix Store' and mount it at /nix" >&2
+    echo "* Disable Spotlight indexing for this volume" >&2
+fi
+if [ "$configure_fstab_nix" = y ]; then
+    echo "* Add the /nix mountpount to /etc/fstab" >&2
+    if [ "$create_nix_volume" != y ]; then
+        echo "  (Using the '$nix_volume' volume)" >&2
+    fi
+fi
+if ! [ -f "$darwin_config" ]; then
+    echo "* Create a sample nix-darwin configuration at '$darwin_config'" >&2
+    if [ -t 0 ]; then
+        echo "  (You will have to opportunity to edit this configuration)" >&2
+    fi
+fi
+echo "* Install and activate nix-darwin" >&2
+if [ -f "$darwin_config" ]; then
+    echo "  (Using the existing configuration at '$darwin_config')" >&2
+fi
+if [ "$configure_channel_nixpkgs" = y ]; then
+    echo "* Add the nixpkgs channel for user '$USER'" >&2
+fi
+if [ "$configure_channel_darwin" = y ]; then
+    echo "* Add the nix-darwin channel for user '$USER'" >&2
+fi
+echo >&2
+echo "Regardless of your custom nix-darwin configuration, this installer will" >&2
+echo "first activate a base nix-darwin system that installs the 'nix-daemon'" >&2
+echo "service and creates build users for Nix." >&2
+echo >&2
+echo "WARNING: THIS INSTALLER IS UNOFFICIAL AND EXPERIMENTAL" >&2
+echo "(The uninstall procedure is also not yet documented)" >&2
+echo >&2
+
+if [ -t 0 ]; then
+    read -p "Ready to install? [y/n] " i
+    case "$i" in
+        y|Y)
+            ;;
+        *)
+            exit 1
+            ;;
+    esac
+else
+    echo "Starting unattended installation." >&2
+fi
+echo >&2
+
+# Perform installation steps
+
+if ! [ -f "$darwin_config" ]; then
+    echo " - Creating a sample nix-darwin configuration at '$darwin_config'..." >&2
+    mkdir -p "$(dirname "$darwin_config")"
+    cp "$self/sample-config.nix" "$darwin_config"
+fi
+
+if [ -t 0 ]; then
+    read -p "Would you like edit '$darwin_config' before starting? [y/n] " i
+    case "$i" in
+        y|Y)
+            "${EDITOR:-nano}" "$darwin_config"
+
+            read -p "Continue installation? [y/n] " i
+            case "$i" in
+                y|Y)
+                    ;;
+                *)
+                    exit 1
+                    ;;
+            esac
+            ;;
+    esac
+    echo >&2
+fi
+
+echo " - Running sudo for steps that require root..." >&2
+sudo /bin/bash -euo pipefail <<EOF
+
+source "$self/volume-util.sh"
+
+if [ "$configure_synthetic_run" = y ]; then
+    echo " - Adding the /run symlink to /etc/synthetic.conf..." >&2
+    echo -e "run\\tprivate/var/run" >> /etc/synthetic.conf
+fi
+
+if [ "$configure_synthetic_nix" = y ]; then
+    echo " - Adding the /nix mountpoint to /etc/synthetic.conf..." >&2
+    echo nix >> /etc/synthetic.conf
+fi
+
+if ! [ -d /nix ] || ! [ -d /run ]; then
+    echo " - Running 'apfs.util -B' to rebootstrap the root fileystem..." >&2
+    /System/Library/Filesystems/apfs.fs/Contents/Resources/apfs.util -B || true
+fi
+if ! [ -d /nix ] || ! [ -d /run ]; then
+    echo "error: failed to rebootstrap the root filesystem (a reboot may help)" >&2
+    echo " - Contents of /etc/synthetic.conf:" >&2
+    cat /etc/synthetic.conf >&2
+    echo " - Root filesystem layout: (expecting /nix and /run)" >&2
+    ls -l / >&2
+    exit 1
+fi
+
+if [ "$create_nix_volume" = y ]; then
+    echo " - Creating a '$nix_volume' volume..." >&2
+    diskutil apfs addVolume "$root_disk" APFS "$nix_volume" -mountpoint /nix
+
+    echo " - Disabling Spotlight indexing for /nix..." >&2
+    mdutil -i off /nix
+fi
+
+if [ "$configure_fstab_nix" = y ]; then
+    echo " - Adding the /nix mount to /etc/fstab..." >&2
+    configure_fstab "$nix_volume"
+fi
+
+echo " - Installing the base nix-darwin system to /nix..." >&2
+mkdir -p /nix/store
+rsync -rlpt --chmod=-w "$self/store"/* /nix/store/
+
+echo " - Initializing the Nix database..." >&2
+cat "$self/.reginfo" | "$sys/sw/bin/nix-store" --load-db
+
+echo " - Running activation for the base nix-darwin system..." >&2
+"$sys/activate"
+EOF
+
+export PATH="/run/current-system/sw/bin:$PATH"
+
+if [ "$configure_channel_nixpkgs" = y ]; then
+    echo " - Adding the nixpkgs channel for user '$USER'..." >&2
+    nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
+fi
+
+if [ "$configure_channel_darwin" = y ]; then
+    echo " - Adding the nix-darwin channel for user '$USER'..." >&2
+    nix-channel --add https://github.com/LnL7/nix-darwin/archive/master.tar.gz darwin
+fi
+
+echo " - Updating channels..." >&2
+nix-channel --update
+
+echo " - Applying the nix-darwin configuration (will run sudo)..." >&2
+export NIX_PATH="darwin-config=$darwin_config:$HOME/.nix-defexpr/channels"
+darwin-rebuild switch
+
+echo " - Installation complete!" >&2
+echo >&2
+echo "You may need to address the activation warnings above, about symlinks" >&2
+echo "in /etc, or your shell might not have the right PATH and NIX_PATH." >&2
+echo "(For example: /etc/bashrc should be a symlink to /etc/static/bashrc)" >&2
+echo >&2
