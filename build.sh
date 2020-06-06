@@ -10,13 +10,6 @@ if [ -d output ]; then
   rm -fr output
 fi
 
-# Add the local checkout of nix-darwin to NIX_PATH. This is setup by GitHub
-# Actions. If it doesn't exist, we simply assume the channel is already present
-# on the system, making local builds easy.
-if [ -d nix-darwin ]; then
-  export NIX_PATH="darwin=${PWD}/nix-darwin:${NIX_PATH}"
-fi
-
 # Add the base system configuration to NIX_PATH.
 export NIX_PATH="darwin-config=${PWD}/support/base-system-config.nix:${NIX_PATH}"
 

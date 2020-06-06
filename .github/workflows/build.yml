@@ -13,14 +13,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Checkout nix-darwin
-      uses: actions/checkout@v2
-      with:
-        repository: LnL7/nix-darwin
-        path: nix-darwin
-
     - name: Install Nix
-      uses: cachix/install-nix-action@v10
+      run: |
+        /bin/bash -c "$(curl -fsSL https://stephank.github.io/nix-darwin-installer/install.sh)"
+        echo "::add-path::/run/current-system/sw/bin"
+        echo "::set-env name=NIX_PATH::$HOME/.nix-defexpr/channels"
 
     - name: Build installer
       run: ./build.sh
