@@ -5,6 +5,7 @@ self="$(dirname "$0")"
 sys="@@sys@@"
 channels_config="$HOME/.nix-channels"
 darwin_config="$HOME/.nixpkgs/darwin-configuration.nix"
+installer_cache="$HOME/.cache/nix-darwin-installer"
 
 source "$self/volume-util.sh"
 
@@ -56,6 +57,7 @@ configure_channel_darwin="$(grep -q "\\sdarwin$" "$channels_config" 2>/dev/null 
 
 # Print an explainer and prompt for confirmation
 
+echo >&2
 echo "This script will:" >&2
 echo >&2
 if [ "$configure_synthetic_run" = y ]; then
@@ -211,9 +213,16 @@ echo " - Applying the nix-darwin configuration (will run sudo)..." >&2
 export NIX_PATH="darwin-config=$darwin_config:$HOME/.nix-defexpr/channels"
 darwin-rebuild switch
 
+if [ -d "$installer_cache" ]; then
+    echo " - Cleaning up installer cache..." >&2
+    chmod -R u+w "$installer_cache"
+    rm -fr "$installer_cache"
+fi
+
+echo >&2
 echo " - Installation complete!" >&2
 echo >&2
 echo "You may need to address the activation warnings above, about symlinks" >&2
-echo "in /etc, or your shell might not have the right PATH and NIX_PATH." >&2
+echo "in /etc, or your shell may not have the right PATH and NIX_PATH set." >&2
 echo "(For example: /etc/bashrc should be a symlink to /etc/static/bashrc)" >&2
 echo >&2

@@ -1,10 +1,8 @@
 # Unofficial nix-darwin installer
 
-This is a combined installer for [Nix] and [nix-darwin]. It is UNOFFICIAL and
+This is a combined installer for [Nix](https://nixos.org/) and
+[nix-darwin](https://github.com/LnL7/nix-darwin). It is UNOFFICIAL and
 EXPERIMENTAL, so use at your own risk.
-
-[Nix]: https://nixos.org
-[nix-darwin]: https://github.com/LnL7/nix-darwin
 
 ## Usage
 
