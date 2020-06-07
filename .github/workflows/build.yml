@@ -88,7 +88,8 @@ jobs:
         git checkout --orphan gh-pages
         git reset --hard
 
-        cp -R "$REPO/support/site"/* ./
+        rsync -r "$REPO/support/site/" ./
+        cp "$REPO/README.md" ./index.md
         mv "$REPO/nix-darwin-installer.tar.xz" ./
         git add .
         git commit -m "Automated build"

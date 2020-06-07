@@ -96,7 +96,7 @@ fi
 echo >&2
 echo "Regardless of your custom nix-darwin configuration, this installer will" >&2
 echo "first activate a base nix-darwin system that installs the 'nix-daemon'" >&2
-echo "service and creates build users for Nix." >&2
+echo "launchd service and creates build users for Nix." >&2
 echo >&2
 echo "WARNING: THIS INSTALLER IS UNOFFICIAL AND EXPERIMENTAL" >&2
 echo "(The uninstall procedure is also not yet documented)" >&2
@@ -229,7 +229,9 @@ fi
 echo >&2
 echo " - Installation complete!" >&2
 echo >&2
-echo "You may need to address the activation warnings above, about symlinks" >&2
-echo "in /etc, or your shell may not have the right PATH and NIX_PATH set." >&2
-echo "(For example: /etc/bashrc should be a symlink to /etc/static/bashrc)" >&2
+echo "You need to restart your shell to get the correct PATH and NIX_PATH." >&2
+echo >&2
+echo "Before doing so, you may need to address any warnings above, about" >&2
+echo "symlinks in /etc. (The installer does not replace existing files.)" >&2
+echo "For example: /etc/bashrc should be a symlink to /etc/static/bashrc" >&2
 echo >&2
