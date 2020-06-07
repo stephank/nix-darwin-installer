@@ -233,5 +233,16 @@ echo "You need to restart your shell to get the correct PATH and NIX_PATH." >&2
 echo >&2
 echo "Before doing so, you may need to address any warnings above, about" >&2
 echo "symlinks in /etc. (The installer does not replace existing files.)" >&2
-echo "For example: /etc/bashrc should be a symlink to /etc/static/bashrc" >&2
+echo "For example, /etc/bashrc should be a symlink to /etc/static/bashrc" >&2
+echo "(Future updates of macOS itself may also reset these files again.)" >&2
+echo >&2
+echo "To apply changes after editing '$darwin_config':" >&2
+echo "$ darwin-rebuild switch" >&2
+echo >&2
+echo "To keep your system up-to-date:" >&2
+echo "$ nix-channel --update" >&2
+echo "$ darwin-rebuild switch" >&2
+echo >&2
+echo "To clean up old generations of your system:" >&2
+echo "$ sudo nix-collect-garbage -d" >&2
 echo >&2
