@@ -2,13 +2,15 @@
 set -euo pipefail
 
 cd "$(dirname "$0")"
+source volume-util.sh
 
+# Constants
 sys="@@sys@@"
 channels_config="$HOME/.nix-channels"
-darwin_config="$HOME/.nixpkgs/darwin-configuration.nix"
 installer_cache="$HOME/.cache/nix-darwin-installer"
 
-source volume-util.sh
+# Configuration
+darwin_config="${darwin_config-"$HOME/.nixpkgs/darwin-configuration.nix"}"
 
 # Perform checks and determine installation steps
 
@@ -147,7 +149,6 @@ echo " - Running sudo for steps that require root..." >&2
 sudo -i /bin/bash -euo pipefail <<EOF
 
 cd "$PWD"
-
 source volume-util.sh
 
 if [ "$configure_synthetic_run" = y ]; then
