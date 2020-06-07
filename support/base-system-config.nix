@@ -1,6 +1,7 @@
 {
   system.stateVersion = 4;
   documentation.enable = false;
+  nix.useSandbox = true;
   users.nix.configureBuildUsers = true;
   users.nix.nrBuildUsers = 4;
   services.nix-daemon.enable = true;
