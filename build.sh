@@ -22,8 +22,9 @@ sed -e "s|@@sys@@|${sys_build}|g" \
 chmod a+x output/install.sh
 
 # Create a tarball containing the output plus the closure.
-tar --create --auto-compress --numeric-owner --uid 0 --gid 0 \
-  --file "nix-darwin-installer.tar.xz" \
+tar --create --numeric-owner --uid 0 --gid 0 \
   -s '|^/nix|nix-darwin-installer|S' \
   -s '|^output|nix-darwin-installer|' \
-  ${sys_closure} output
+  ${sys_closure} output \
+  | xz --compress --stdout --threads=0 -7 - \
+  > "nix-darwin-installer.tar.xz"
