@@ -89,8 +89,9 @@ jobs:
         git reset --hard
 
         rsync -r "$REPO/support/site/" ./
-        cp "$REPO/README.md" ./index.md
         mv "$REPO/nix-darwin-installer.tar.xz" ./
+        cp "$REPO/README.md" ./index.md
+        echo -e "\nLast update: $(date -u "+%a, %d %b %Y %T UTC")" >> ./index.md
         git add .
         git commit -m "Automated build"
         git push -f github gh-pages
