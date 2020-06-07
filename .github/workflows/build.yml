@@ -3,6 +3,8 @@ name: build
 on:
   push:
     branches: [master]
+  pull_request:
+    branches: '**'
   schedule:
   - cron: '49 1 * * *'
 
@@ -47,6 +49,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     needs: test
     steps:
 

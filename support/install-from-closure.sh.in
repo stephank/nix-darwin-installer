@@ -1,13 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-self="$(dirname "$0")"
+cd "$(dirname "$0")"
+
 sys="@@sys@@"
 channels_config="$HOME/.nix-channels"
 darwin_config="$HOME/.nixpkgs/darwin-configuration.nix"
 installer_cache="$HOME/.cache/nix-darwin-installer"
 
-source "$self/volume-util.sh"
+source volume-util.sh
 
 # Perform checks and determine installation steps
 
@@ -120,7 +121,7 @@ echo >&2
 if ! [ -f "$darwin_config" ]; then
     echo " - Creating a sample nix-darwin configuration at '$darwin_config'..." >&2
     mkdir -p "$(dirname "$darwin_config")"
-    cp "$self/sample-config.nix" "$darwin_config"
+    cp sample-config.nix "$darwin_config"
 fi
 
 if [ -t 0 ]; then
@@ -143,9 +144,11 @@ if [ -t 0 ]; then
 fi
 
 echo " - Running sudo for steps that require root..." >&2
-sudo /bin/bash -euo pipefail <<EOF
+sudo -i /bin/bash -euo pipefail <<EOF
 
-source "$self/volume-util.sh"
+cd "$PWD"
+
+source volume-util.sh
 
 if [ "$configure_synthetic_run" = y ]; then
     echo " - Adding the /run symlink to /etc/synthetic.conf..." >&2
@@ -185,13 +188,17 @@ fi
 
 echo " - Installing the base nix-darwin system to /nix..." >&2
 mkdir -p /nix/store
-rsync -rlpt --chmod=-w "$self/store"/* /nix/store/
+rsync -rlpt --chmod=-w store/* /nix/store/
 
 echo " - Initializing the Nix database..." >&2
-cat "$self/.reginfo" | "$sys/sw/bin/nix-store" --load-db
+"$sys/sw/bin/nix-store" --load-db < .reginfo
 
 echo " - Running activation for the base nix-darwin system..." >&2
 "$sys/activate"
+
+echo " - Initializing empty channels for root..." >&2
+"$sys/sw/bin/nix-channel" --update
+
 EOF
 
 export PATH="/run/current-system/sw/bin:$PATH"
