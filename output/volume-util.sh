@@ -37,6 +37,6 @@ find_nix_volume() {
 
 configure_fstab() {
     volume="$1"
-    label=$(echo "$volume" | sed "s/ /\\040/g")
+    label=$(echo "$volume" | sed "s/ /\\\040/g")
     printf "\$a\nLABEL=%s /nix apfs rw,nobrowse\n.\nwq\n" "$label" | EDITOR=ed vifs
 }
