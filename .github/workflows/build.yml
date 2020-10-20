@@ -24,8 +24,8 @@ jobs:
 
         /bin/bash -c "$(curl -fsSL https://stephank.github.io/nix-darwin-installer/install.sh)"
 
-        echo "::add-path::/run/current-system/sw/bin"
-        echo "::set-env name=NIX_PATH::$HOME/.nix-defexpr/channels"
+        echo "/run/current-system/sw/bin" >> $GITHUB_PATH
+        echo "NIX_PATH=$HOME/.nix-defexpr/channels" >> $GITHUB_ENV
 
     - name: Build installer
       run: ./build.sh
