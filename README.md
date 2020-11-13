@@ -7,8 +7,8 @@ EXPERIMENTAL, so use at your own risk.
 /bin/bash -c "$(curl -fsSL https://stephank.github.io/nix-darwin-installer/install.sh)"
 ```
 
-Requires macOS 10.14 or higher. [Source code on GitHub]. A basic installation
-downloads about 60 MB.
+Requires macOS 10.14 or 10.15. (Does not yet support Big Sur.) [Source code on
+GitHub]. A basic installation downloads about 60 MB.
 
 ## Post-install
 
@@ -82,9 +82,9 @@ The installer is based on code from the official [Nix] installer. (LGPL 2.1)
 
 The site is built with [Jekyll], and based on the [Solo] theme. (MIT)
 
-[Nix]: https://nixos.org/
+[nix]: https://nixos.org/
 [nix-darwin]: https://github.com/LnL7/nix-darwin
-[Source code on GitHub]: https://github.com/stephank/nix-darwin-installer
-[`environment.darwinConfig`]: https://lnl7.github.io/nix-darwin/manual/index.html#opt-environment.darwinConfig
-[Jekyll]: https://jekyllrb.com
-[Solo]: https://github.com/chibicode/solo
+[source code on github]: https://github.com/stephank/nix-darwin-installer
+[`environment.darwinconfig`]: https://lnl7.github.io/nix-darwin/manual/index.html#opt-environment.darwinConfig
+[jekyll]: https://jekyllrb.com
+[solo]: https://github.com/chibicode/solo
